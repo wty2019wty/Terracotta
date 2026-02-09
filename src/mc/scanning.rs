@@ -15,13 +15,15 @@ pub struct MinecraftScanner {
 }
 
 impl MinecraftScanner {
-    pub fn create(filter: fn(&str) -> bool) -> MinecraftScanner {
+    // 🔴 修改1：去掉create方法的filter参数
+    pub fn create() -> MinecraftScanner {
         let (tx, rx) = mpsc::channel::<()>();
         let port = Arc::new(Mutex::new(vec![]));
 
         let port_cloned = Arc::clone(&port);
         thread::spawn(move || {
-            let result = Self::run(rx, port_cloned, filter);
+            // 🔴 修改2：调用run时不再传递filter参数
+            let result = Self::run(rx, port_cloned);
 
             match result {
                 Ok(_) => {}
@@ -34,7 +36,8 @@ impl MinecraftScanner {
         return MinecraftScanner { _holder: tx, port };
     }
 
-    fn run(signal: Receiver<()>, output: Arc<Mutex<Vec<u16>>>, filter: fn(&str) -> bool) -> Result<()> {
+    // 🔴 修改3：run方法去掉filter参数
+    fn run(signal: Receiver<()>, output: Arc<Mutex<Vec<u16>>>) -> Result<()> {
         let sockets: Vec<(Socket, &IpAddr)> = crate::ADDRESSES
             .iter()
             .map(|address| match address {
@@ -95,11 +98,11 @@ impl MinecraftScanner {
                     {
                         let begin = data.find("[MOTD]");
                         let end = data.find("[/MOTD]");
+                        // 🔴 修改4：去掉 && filter(motd) 这个条件
                         if let Some(begin) = begin
                             && let Some(end) = end
                             && end - begin >= "[MOTD]".len() + 1
-                            && let Some(motd) = data.as_ref().get((begin + "[MOTD]".len())..end)
-                            && filter(motd)
+                            && let Some(_motd) = data.as_ref().get((begin + "[MOTD]".len())..end)
                         {} else {
                             continue;
                         }
