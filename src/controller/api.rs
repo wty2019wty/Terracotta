@@ -98,8 +98,9 @@ pub fn set_scanning(room: Option<String>, player: Option<String>, public_nodes: 
             return;
         }
 
+        // 🔴 关键修改：移除create方法后的闭包参数(|m| m != MOTD)
         state.set(AppState::HostScanning {
-            scanner: MinecraftScanner::create(|m| m != MOTD),
+            scanner: MinecraftScanner::create(),
         })
     };
     logging!("Core", "Setting to state SCANNING.");
