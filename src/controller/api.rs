@@ -3,7 +3,8 @@ use crate::controller::states::AppState;
 use crate::controller::{scaffolding, ConnectionDifficulty, ExceptionType, Room};
 use crate::scaffolding::profile::Profile;
 use crate::mc::scanning::MinecraftScanner;
-use crate::MOTD;
+// 🔴 修复：删除未使用的MOTD导入
+// use crate::MOTD;
 use rocket::serde::Serialize;
 use serde::ser::SerializeSeq;
 use serde::Serializer;
@@ -98,7 +99,7 @@ pub fn set_scanning(room: Option<String>, player: Option<String>, public_nodes: 
             return;
         }
 
-        // 🔴 关键修改：移除create方法后的闭包参数(|m| m != MOTD)
+        // 调用无参的create方法（匹配修改后的定义）
         state.set(AppState::HostScanning {
             scanner: MinecraftScanner::create(),
         })
