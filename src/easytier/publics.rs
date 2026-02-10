@@ -9,6 +9,7 @@ pub fn fetch_public_nodes(_: &Room, mut external_nodes: PublicServers) -> Public
         "https://etnode.zkitefly.eu.org/node1",
         "https://etnode.zkitefly.eu.org/node2",
         "tcp://23.145.248.157:11010",
+        "udp://23.145.248.157:11010",
     ].map(|s| s.into()));
 
     external_nodes
