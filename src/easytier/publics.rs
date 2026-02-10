@@ -4,12 +4,11 @@ pub type PublicServers = Vec<String>;
 
 pub fn fetch_public_nodes(_: &Room, mut external_nodes: PublicServers) -> PublicServers {
     external_nodes.extend_from_slice(&[
-        "tcp://public.easytier.top:11010",
         "tcp://public2.easytier.cn:54321",
+        "tcp://public.easytier.top:11010",
         "https://etnode.zkitefly.eu.org/node1",
         "https://etnode.zkitefly.eu.org/node2",
         "tcp://23.145.248.157:11010",
-        "udp://23.145.248.157:11010",
     ].map(|s| s.into()));
 
     external_nodes
