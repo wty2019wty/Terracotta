@@ -1,5 +1,5 @@
 /target
 /.easytier
 Cargo.lock
-
+bin_terracotta
 .idea
