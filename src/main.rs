@@ -132,6 +132,7 @@ lazy_static! {
 #[derive(Debug, PartialEq)]
 enum Mode {
     General,
+    Server,
     #[cfg(target_os = "macos")]
     Daemon,
     HMCL {
@@ -224,11 +225,13 @@ async fn main() {
         1 => match arguments[0].as_str() {
             #[cfg(target_os = "macos")]
             "--daemon" => main_daemon().await,
+            "--server" => main_general(Mode::Server).await,
             "--help" => {
                 println!("Welcoming using Terracotta | 陶瓦联机");
                 println!("Usage: terracotta [OPTIONS]");
                 println!("Options:");
                 println!("  --help: Print this help message");
+                println!("  --server: Run in dedicated server mode (127.0.0.1:25565).");
                 println!("  --hmcl: [HMCL] For HMCL only.");
                 #[cfg(target_os = "windows")]
                 println!("  --hmcl2: [INTERNAL] For HMCL only.");
@@ -440,6 +443,16 @@ async fn main_single(state: Option<Lock>, mode: Mode) {
                 Mode::General => {
                     let _ = open::that(format!("http://127.0.0.1:{}/", port));
                 }
+                Mode::Server => {
+                    thread::spawn(|| {
+                        controller::set_hosting(
+                            None,
+                            Some("server".to_string()),
+                            25565,
+                            vec![],
+                        );
+                    });
+                }
                 Mode::HMCL { file } => output_port(port, file),
             }
         }
@@ -462,7 +475,7 @@ async fn main_secondary(port: u16, mode: Mode) {
     }
 
     match mode {
-        Mode::General => {
+        Mode::General | Mode::Server => {
             cfg_if::cfg_if! {
                 if #[cfg(target_os = "macos")] {
                     ui_macos::open(format!("http://127.0.0.1:{}/", port));

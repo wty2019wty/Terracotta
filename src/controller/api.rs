@@ -135,6 +135,35 @@ pub fn set_scanning(room: Option<String>, player: Option<String>, public_nodes: 
     });
 }
 
+pub fn set_hosting(room: Option<String>, player: Option<String>, port: u16, public_nodes: Vec<String>) {
+    let room = room
+        .and_then(|room| Room::from(&room))
+        .unwrap_or_else(Room::create);
+
+    let capture = {
+        let state = AppState::acquire();
+        if !matches!(state.as_ref(), AppState::Waiting) {
+            return;
+        }
+
+        state.set(AppState::HostStarting {
+            room: room.clone(),
+            port,
+        })
+    };
+    logging!("Core", "Setting to state HOSTING (direct, port={}).", port);
+
+    thread::spawn(move || {
+        let (sender, receiver) = mpsc::channel();
+        let room2 = room.clone();
+        thread::spawn(move || {
+            let _ = sender.send(fetch_public_nodes(&room2, public_nodes));
+        });
+
+        scaffolding::start_host(room, port, player, capture, receiver.recv().unwrap())
+    });
+}
+
 pub fn set_guesting(room: Room, player: Option<String>, public_nodes: Vec<String>) -> bool {
     let capture = {
         let state = AppState::acquire();

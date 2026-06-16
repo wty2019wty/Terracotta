@@ -32,6 +32,12 @@ fn set_state_guesting(room: &str, player: Option<String>, public_nodes: Vec<Stri
     Status::BadRequest
 }
 
+#[get("/hosting?<room>&<player>&<port>&<public_nodes>")]
+fn set_state_hosting(room: Option<String>, player: Option<String>, port: u16, public_nodes: Vec<String>) -> Status {
+    controller::set_hosting(room, player, port, public_nodes);
+    Status::Ok
+}
+
 pub fn configure(rocket: rocket::Rocket<rocket::Build>) -> rocket::Rocket<rocket::Build> {
     rocket.mount(
         "/state",
@@ -40,6 +46,7 @@ pub fn configure(rocket: rocket::Rocket<rocket::Build>) -> rocket::Rocket<rocket
             set_state_ide,
             set_state_scanning,
             set_state_guesting,
+            set_state_hosting,
         ],
     )
 }
