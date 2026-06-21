@@ -20,9 +20,8 @@ Terracotta 为游玩 Minecraft: Java Edition 的玩家提供开箱即用的联�
 > 2. 您的程序通过本作品提供的进程间通信接口（如 HTTP API）与未经修改的本作品应用程序进行交互，且在您的程序用户界面明显处标识了本作品的版权信息。
 
 ```
-# 直接以服务器模式启动（硬编码 127.0.0.1:25565）
-./terracotta --server
 
-# 或通过 HTTP API（自定义端口和名称）
+# 通过 HTTP API（自定义端口和名称）
+
 curl "http://127.0.0.1:{port}/state/hosting?port=25565&player=MyServer"
 ```
