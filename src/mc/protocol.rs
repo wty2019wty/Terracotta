@@ -239,12 +239,15 @@ fn validate_legacy_response(data: &[u8]) -> bool {
         parts[1].parse::<u32>().is_ok()
     } else {
         // Pre-1.4 format: <motd>§<online>§<max>
+        // The MOTD itself may contain § formatting codes, so online and max
+        // are always the *last two* segments after splitting by §.
         let legacy_parts: Vec<&str> = parts[0].split('§').collect();
         if legacy_parts.len() < 3 {
             return false;
         }
-        // Validate online and max are parseable numbers
-        legacy_parts[1].parse::<u32>().is_ok() && legacy_parts[2].parse::<u32>().is_ok()
+        let n = legacy_parts.len();
+        legacy_parts[n - 2].parse::<u32>().is_ok()
+            && legacy_parts[n - 1].parse::<u32>().is_ok()
     }
 }
 
