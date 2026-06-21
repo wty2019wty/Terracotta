@@ -625,10 +625,24 @@ fn compute_arguments(room: &Room, public_servers: PublicServers) -> Vec<Argument
 }
 
 fn check_mc_conn(port: u16) -> bool {
+    let start = SystemTime::now();
+
     // Try modern Java Edition Server List Ping protocol (1.7+) first
-    if crate::mc::protocol::ping_modern(port) {
+    let ok = crate::mc::protocol::ping_modern(port)
+        // Fall back to legacy protocol (pre-1.7 servers)
+        || crate::mc::protocol::ping_legacy(port);
+
+    if ok {
         return true;
     }
-    // Fall back to legacy protocol (pre-1.7 servers)
-    crate::mc::protocol::ping_legacy(port)
+
+    // Ensure each failed attempt takes at least 5 seconds so that
+    // tight retry loops (e.g. start_guest with 8 attempts) give the
+    // port-forward / tunnel time to become ready.
+    thread::sleep(
+        (start + Duration::from_secs(5))
+            .duration_since(SystemTime::now())
+            .unwrap_or(Duration::ZERO),
+    );
+    false
 }

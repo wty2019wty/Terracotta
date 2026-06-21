@@ -5,11 +5,16 @@
 //! on a given localhost port.
 
 use socket2::{Domain, SockAddr, Socket, Type};
-use std::io::{Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::time::Duration;
 
 const PING_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Maximum packet length weʼre willing to allocate (1 MiB).
+/// A Minecraft status JSON response is typically < 10 KiB; anything
+/// approaching this limit is either malicious or not a Minecraft server.
+const MAX_PACKET_LEN: i32 = 1_048_576;
 
 // ── Varint utilities ──────────────────────────────────────────────────────────
 
@@ -114,19 +119,23 @@ pub fn ping_modern(port: u16) -> bool {
         return false;
     }
 
-    // 4. Read response: outer varint = packet length
-    let packet_len = match read_varint(&mut socket) {
-        Some(len) if len > 0 => len as usize,
+    // 4. Wrap in BufReader for the read phase — avoids one syscall per byte
+    //    during varint decoding.
+    let mut reader = BufReader::new(socket);
+
+    // 5. Read response: outer varint = packet length
+    let packet_len = match read_varint(&mut reader) {
+        Some(len) if len > 0 && len <= MAX_PACKET_LEN => len as usize,
         _ => return false,
     };
 
     // Read the packet body
     let mut packet_data = vec![0u8; packet_len];
-    if socket.read_exact(&mut packet_data).is_err() {
+    if reader.read_exact(&mut packet_data).is_err() {
         return false;
     }
 
-    // 5. Parse response: packet ID (varint) should be 0x00
+    // 6. Parse response: packet ID (varint) should be 0x00
     let (packet_id, offset) = match read_varint_slice(&packet_data) {
         Some(v) => v,
         None => return false,
@@ -135,16 +144,16 @@ pub fn ping_modern(port: u16) -> bool {
         return false;
     }
 
-    // 6. Read JSON string length (varint)
+    // 7. Read JSON string length (varint)
     let (json_len, json_offset) = match read_varint_slice(&packet_data[offset..]) {
         Some(v) => v,
         None => return false,
     };
-    if json_len <= 0 {
+    if json_len <= 0 || json_len > MAX_PACKET_LEN {
         return false;
     }
 
-    // 7. Extract and validate JSON
+    // 8. Extract and validate JSON
     let json_start = offset + json_offset;
     let json_end = json_start + json_len as usize;
     if json_end > packet_data.len() {
@@ -173,35 +182,39 @@ pub fn ping_legacy(port: u16) -> bool {
         return false;
     }
 
-    // 2. Read packet ID (should be 0xFF)
+    // 2. Wrap in BufReader for the read phase.
+    let mut reader = BufReader::new(socket);
+
+    // 3. Read packet ID (should be 0xFF)
     let mut packet_id_buf = [0u8; 1];
-    if socket.read_exact(&mut packet_id_buf).is_err() {
+    if reader.read_exact(&mut packet_id_buf).is_err() {
         return false;
     }
     if packet_id_buf[0] != 0xFF {
         return false;
     }
 
-    // 3. Read string length (unsigned short, big-endian, in UTF-16 characters)
+    // 4. Read string length (unsigned short, big-endian, in UTF-16 characters)
     let mut len_buf = [0u8; 2];
-    if socket.read_exact(&mut len_buf).is_err() {
+    if reader.read_exact(&mut len_buf).is_err() {
         return false;
     }
     let char_len = u16::from_be_bytes(len_buf) as usize;
 
-    // Sanity check on length
+    // A u16 is at most 65535 chars → 131070 bytes. Still, guard against
+    // zero-length or unreasonably large responses.
     if char_len == 0 || char_len > 65535 {
         return false;
     }
 
-    // 4. Read the string data (UTF-16BE, 2 bytes per character)
+    // 5. Read the string data (UTF-16BE, 2 bytes per character)
     let byte_len = char_len * 2;
     let mut string_data = vec![0u8; byte_len];
-    if socket.read_exact(&mut string_data).is_err() {
+    if reader.read_exact(&mut string_data).is_err() {
         return false;
     }
 
-    // 5. Decode and validate the response
+    // 6. Decode and validate the response
     validate_legacy_response(&string_data)
 }
 
@@ -236,15 +249,15 @@ fn validate_legacy_response(data: &[u8]) -> bool {
 }
 
 /// Decodes UTF-16BE bytes into a Rust String.
+///
+/// Uses the standard library's `char::decode_utf16` which correctly handles
+/// surrogate pairs for characters outside the Basic Multilingual Plane.
 fn decode_utf16be(data: &[u8]) -> String {
-    let mut result = String::new();
-    let mut i = 0;
-    while i + 1 < data.len() {
-        let code_unit = u16::from_be_bytes([data[i], data[i + 1]]);
-        if let Some(ch) = char::from_u32(code_unit as u32) {
-            result.push(ch);
-        }
-        i += 2;
-    }
-    result
+    let code_units: Vec<u16> = data
+        .chunks_exact(2)
+        .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
+        .collect();
+    char::decode_utf16(code_units)
+        .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
+        .collect()
 }
