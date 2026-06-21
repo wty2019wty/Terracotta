@@ -12,7 +12,7 @@ use crate::scaffolding::profile::{Profile, ProfileKind, ProfileSnapshot};
 use crate::scaffolding::PacketResponse;
 use rand_core::{OsRng, TryRngCore};
 use serde_json::{json, Value};
-use socket2::{Domain, SockAddr, Socket, Type};
+
 use std::borrow::Cow;
 use std::mem::{transmute, MaybeUninit};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
@@ -627,23 +627,18 @@ fn compute_arguments(room: &Room, public_servers: PublicServers) -> Vec<Argument
 fn check_mc_conn(port: u16) -> bool {
     let start = SystemTime::now();
 
-    let socket = Socket::new(Domain::IPV4, Type::STREAM, None).unwrap();
-    socket.set_read_timeout(Some(Duration::from_secs(64))).unwrap();
-    socket.set_write_timeout(Some(Duration::from_secs(64))).unwrap();
-    if let Ok(_) = socket.connect_timeout(
-        &SockAddr::from(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port)),
-        Duration::from_secs(64),
-    ) && let Ok(_) = socket.send(&[0xFE]) {
-        let mut buf: [MaybeUninit<u8>; _] = [MaybeUninit::uninit(); 1];
+    // Try modern Java Edition Server List Ping protocol (1.7+) first
+    let ok = crate::mc::protocol::ping_modern(port)
+        // Fall back to legacy protocol (pre-1.7 servers)
+        || crate::mc::protocol::ping_legacy(port);
 
-        if let Ok(size) = socket.recv(&mut buf) && size >= 1
-            // SAFETY: The first byte has been initialized by recv, as size >= 1
-            && unsafe { buf[0].assume_init() } == 0xFF
-        {
-            return true;
-        }
+    if ok {
+        return true;
     }
 
+    // Ensure each failed attempt takes at least 5 seconds so that
+    // tight retry loops (e.g. start_guest with 8 attempts) give the
+    // port-forward / tunnel time to become ready.
     thread::sleep(
         (start + Duration::from_secs(5))
             .duration_since(SystemTime::now())
