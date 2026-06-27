@@ -1,4 +1,4 @@
-use crate::controller::scaffolding::{MACHINE_ID, VENDOR};
+use crate::controller::scaffolding::{MACHINE_ID, get_vendor};
 use crate::controller::states::{AppState, AppStateCapture};
 use crate::controller::{ConnectionDifficulty, ExceptionType, Room, RoomKind, SCAFFOLDING_PORT};
 use crate::easytier;
@@ -161,7 +161,7 @@ pub fn start_host(room: Room, port: u16, player: Option<String>, capture: AppSta
                 ProfileSnapshot {
                     machine_id: MACHINE_ID.to_string(),
                     name: player.unwrap_or("Terracotta Anonymous Host".to_string()),
-                    vendor: VENDOR.to_string(),
+                    vendor: get_vendor(),
                     kind: ProfileKind::HOST
                 }.into_profile()
             )],
@@ -418,7 +418,7 @@ pub fn start_guest(room: Room, player: Option<String>, capture: AppStateCapture,
     let local_profile = ProfileSnapshot {
         machine_id: MACHINE_ID.to_string(),
         name: player.unwrap_or("Terracotta Anonymous Guest".to_string()),
-        vendor: VENDOR.to_string(),
+        vendor: get_vendor(),
         kind: ProfileKind::LOCAL,
     }.into_profile();
 

@@ -91,7 +91,8 @@ pub fn set_waiting() {
     state.set(AppState::Waiting);
 }
 
-pub fn set_scanning(room: Option<String>, player: Option<String>, public_nodes: Vec<String>) {
+pub fn set_scanning(room: Option<String>, player: Option<String>, public_nodes: Vec<String>, vendor: Option<String>) {
+    crate::controller::scaffolding::set_custom_vendor(vendor);
     let capture = {
         let state = AppState::acquire();
         if !matches!(state.as_ref(), AppState::Waiting) {
@@ -135,7 +136,8 @@ pub fn set_scanning(room: Option<String>, player: Option<String>, public_nodes: 
     });
 }
 
-pub fn set_hosting(room: Option<String>, player: Option<String>, port: u16, public_nodes: Vec<String>) {
+pub fn set_hosting(room: Option<String>, player: Option<String>, port: u16, public_nodes: Vec<String>, vendor: Option<String>) {
+    crate::controller::scaffolding::set_custom_vendor(vendor);
     let room = room
         .and_then(|room| Room::from(&room))
         .unwrap_or_else(Room::create);
@@ -164,7 +166,8 @@ pub fn set_hosting(room: Option<String>, player: Option<String>, port: u16, publ
     });
 }
 
-pub fn set_guesting(room: Room, player: Option<String>, public_nodes: Vec<String>) -> bool {
+pub fn set_guesting(room: Room, player: Option<String>, public_nodes: Vec<String>, vendor: Option<String>) -> bool {
+    crate::controller::scaffolding::set_custom_vendor(vendor);
     let capture = {
         let state = AppState::acquire();
         if !matches!(state.as_ref(), AppState::Waiting { .. }) {
