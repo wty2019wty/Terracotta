@@ -92,7 +92,6 @@ pub fn set_waiting() {
 }
 
 pub fn set_scanning(room: Option<String>, player: Option<String>, public_nodes: Vec<String>, vendor: Option<String>) {
-    crate::controller::scaffolding::set_custom_vendor(vendor);
     let capture = {
         let state = AppState::acquire();
         if !matches!(state.as_ref(), AppState::Waiting) {
@@ -132,12 +131,11 @@ pub fn set_scanning(room: Option<String>, player: Option<String>, public_nodes: 
             }
         };
 
-        scaffolding::start_host(room, port, player, capture, receiver.recv().unwrap())
+        scaffolding::start_host(room, port, player, capture, receiver.recv().unwrap(), vendor)
     });
 }
 
 pub fn set_hosting(room: Option<String>, player: Option<String>, port: u16, public_nodes: Vec<String>, vendor: Option<String>) {
-    crate::controller::scaffolding::set_custom_vendor(vendor);
     let room = room
         .and_then(|room| Room::from(&room))
         .unwrap_or_else(Room::create);
@@ -162,12 +160,11 @@ pub fn set_hosting(room: Option<String>, player: Option<String>, port: u16, publ
             let _ = sender.send(fetch_public_nodes(&room2, public_nodes));
         });
 
-        scaffolding::start_host(room, port, player, capture, receiver.recv().unwrap())
+        scaffolding::start_host(room, port, player, capture, receiver.recv().unwrap(), vendor)
     });
 }
 
 pub fn set_guesting(room: Room, player: Option<String>, public_nodes: Vec<String>, vendor: Option<String>) -> bool {
-    crate::controller::scaffolding::set_custom_vendor(vendor);
     let capture = {
         let state = AppState::acquire();
         if !matches!(state.as_ref(), AppState::Waiting { .. }) {
@@ -178,7 +175,7 @@ pub fn set_guesting(room: Room, player: Option<String>, public_nodes: Vec<String
     logging!("Core", "Connecting to room, code={}", room.code);
     thread::spawn(move || {
         let public_nodes = fetch_public_nodes(&room, public_nodes);
-        scaffolding::start_guest(room, player, capture, public_nodes)
+        scaffolding::start_guest(room, player, capture, public_nodes, vendor)
     });
 
     true

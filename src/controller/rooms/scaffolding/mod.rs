@@ -13,16 +13,9 @@ lazy_static::lazy_static! {
     static ref VENDOR: &'static str = format!("Terracotta {}, EasyTier {}", env!("TERRACOTTA_VERSION"), env!("TERRACOTTA_ET_VERSION")).leak();
 }
 
-static CUSTOM_VENDOR: parking_lot::Mutex<Option<String>> = parking_lot::Mutex::new(None);
-
-pub fn set_custom_vendor(value: Option<String>) {
-    *CUSTOM_VENDOR.lock() = value;
-}
-
-pub fn get_vendor() -> String {
+pub fn vendor_string(custom: Option<&str>) -> String {
     let base = VENDOR.to_string();
-    let custom = CUSTOM_VENDOR.lock();
-    match custom.as_ref() {
+    match custom {
         Some(suffix) if !suffix.is_empty() => format!("{} ({})", base, suffix),
         _ => base,
     }

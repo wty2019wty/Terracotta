@@ -1,4 +1,4 @@
-use crate::controller::scaffolding::{MACHINE_ID, get_vendor};
+use crate::controller::scaffolding::{MACHINE_ID, vendor_string};
 use crate::controller::states::{AppState, AppStateCapture};
 use crate::controller::{ConnectionDifficulty, ExceptionType, Room, RoomKind, SCAFFOLDING_PORT};
 use crate::easytier;
@@ -137,7 +137,7 @@ fn from_value(value: u128) -> (String, String, String) {
     (code, network_name, network_secret)
 }
 
-pub fn start_host(room: Room, port: u16, player: Option<String>, capture: AppStateCapture, public_servers: PublicServers) {
+pub fn start_host(room: Room, port: u16, player: Option<String>, capture: AppStateCapture, public_servers: PublicServers, vendor: Option<String>) {
     let scaffolding = *SCAFFOLDING_PORT;
 
     let mut args = compute_arguments(&room, public_servers);
@@ -161,7 +161,7 @@ pub fn start_host(room: Room, port: u16, player: Option<String>, capture: AppSta
                 ProfileSnapshot {
                     machine_id: MACHINE_ID.to_string(),
                     name: player.unwrap_or("Terracotta Anonymous Host".to_string()),
-                    vendor: get_vendor(),
+                    vendor: vendor_string(vendor.as_deref()),
                     kind: ProfileKind::HOST
                 }.into_profile()
             )],
@@ -215,7 +215,7 @@ pub fn start_host(room: Room, port: u16, player: Option<String>, capture: AppSta
     });
 }
 
-pub fn start_guest(room: Room, player: Option<String>, capture: AppStateCapture, public_servers: PublicServers) {
+pub fn start_guest(room: Room, player: Option<String>, capture: AppStateCapture, public_servers: PublicServers, vendor: Option<String>) {
     let mut args = compute_arguments(&room, public_servers);
     args.push(Argument::DHCP);
     args.push(Argument::TcpWhitelist(0));
@@ -418,7 +418,7 @@ pub fn start_guest(room: Room, player: Option<String>, capture: AppStateCapture,
     let local_profile = ProfileSnapshot {
         machine_id: MACHINE_ID.to_string(),
         name: player.unwrap_or("Terracotta Anonymous Guest".to_string()),
-        vendor: get_vendor(),
+        vendor: vendor_string(vendor.as_deref()),
         kind: ProfileKind::LOCAL,
     }.into_profile();
 

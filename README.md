@@ -30,8 +30,6 @@ GET /state/hosting?port=25565&player=MyServer&vendor=MyCustomBrand
 
 GET /state/scanning?vendor=MyCustomBrand
 
-GET /state/hosting?vendor=MyCustomBrand
-
 GET /state/guesting?room=U/XXXX-XXXX-XXXX-XXXX&vendor=MyCustomBrand
 
 ```
