@@ -24,4 +24,14 @@ Terracotta 为游玩 Minecraft: Java Edition 的玩家提供开箱即用的联�
 # 通过 HTTP API（自定义端口和名称）
 
 curl "http://127.0.0.1:{port}/state/hosting?port=25565&player=MyServer"
+
+
+GET /state/hosting?port=25565&player=MyServer&vendor=MyCustomBrand
+
+GET /state/scanning?vendor=MyCustomBrand
+
+GET /state/hosting?vendor=MyCustomBrand
+
+GET /state/guesting?room=U/XXXX-XXXX-XXXX-XXXX&vendor=MyCustomBrand
+
 ```
