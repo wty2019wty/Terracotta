@@ -13,6 +13,14 @@ lazy_static::lazy_static! {
     static ref VENDOR: &'static str = format!("Terracotta {}, EasyTier {}", env!("TERRACOTTA_VERSION"), env!("TERRACOTTA_ET_VERSION")).leak();
 }
 
+pub fn vendor_string(custom: Option<&str>) -> String {
+    let base = VENDOR.to_string();
+    match custom {
+        Some(suffix) if !suffix.is_empty() => format!("{} ({})", base, suffix),
+        _ => base,
+    }
+}
+
 fn get_machine_id() -> &'static str {
     if let Ok(mut file) = OpenOptions::new().read(true).write(true).create(true).truncate(false).open(MACHINE_ID_FILE.clone()) {
         let mut bytes = [0u8; 17];

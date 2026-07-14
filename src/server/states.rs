@@ -16,15 +16,15 @@ fn set_state_ide() -> Status {
     Status::Ok
 }
 
-#[get("/scanning?<room>&<player>&<public_nodes>")]
-fn set_state_scanning(room: Option<String>, player: Option<String>, public_nodes: Vec<String>) -> Status {
-    controller::set_scanning(room, player, public_nodes);
+#[get("/scanning?<room>&<player>&<public_nodes>&<vendor>")]
+fn set_state_scanning(room: Option<String>, player: Option<String>, public_nodes: Vec<String>, vendor: Option<String>) -> Status {
+    controller::set_scanning(room, player, public_nodes, vendor);
     Status::Ok
 }
 
-#[get("/guesting?<room>&<player>&<public_nodes>")]
-fn set_state_guesting(room: &str, player: Option<String>, public_nodes: Vec<String>) -> Status {
-    if let Some(room) = Room::from(room) && controller::set_guesting(room, player, public_nodes)
+#[get("/guesting?<room>&<player>&<public_nodes>&<vendor>")]
+fn set_state_guesting(room: &str, player: Option<String>, public_nodes: Vec<String>, vendor: Option<String>) -> Status {
+    if let Some(room) = Room::from(room) && controller::set_guesting(room, player, public_nodes, vendor)
     {
         return Status::Ok;
     }
@@ -32,9 +32,9 @@ fn set_state_guesting(room: &str, player: Option<String>, public_nodes: Vec<Stri
     Status::BadRequest
 }
 
-#[get("/hosting?<room>&<player>&<port>&<public_nodes>")]
-fn set_state_hosting(room: Option<String>, player: Option<String>, port: u16, public_nodes: Vec<String>) -> Status {
-    controller::set_hosting(room, player, port, public_nodes);
+#[get("/hosting?<room>&<player>&<port>&<public_nodes>&<vendor>")]
+fn set_state_hosting(room: Option<String>, player: Option<String>, port: u16, public_nodes: Vec<String>, vendor: Option<String>) -> Status {
+    controller::set_hosting(room, player, port, public_nodes, vendor);
     Status::Ok
 }
 
